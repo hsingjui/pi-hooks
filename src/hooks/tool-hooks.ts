@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { getHookGroups, matcherMatches } from "../config";
 import { extractErrorFromContent } from "../helpers";
-import type { HookModuleContext } from "../hook-context";
+import { type HookModuleContext, safeHandler } from "../hook-context";
 import type {
   HookExecutionContext,
   NotifyFn,
@@ -240,7 +240,7 @@ export async function triggerPostToolUseFailureHooks(
 }
 
 export function registerToolHooks(pi: ExtensionAPI, shared: HookModuleContext) {
-  pi.on("tool_call", async (event, ctx) => {
+  pi.on("tool_call", safeHandler(async (event, ctx) => {
     const result = await triggerPreToolUseHooks(
       event.toolName,
       {
@@ -277,9 +277,9 @@ export function registerToolHooks(pi: ExtensionAPI, shared: HookModuleContext) {
         toolUseId: event.toolCallId,
       });
     }
-  });
+  }));
 
-  pi.on("tool_result", async (event, ctx): Promise<any> => {
+  pi.on("tool_result", safeHandler(async (event, ctx): Promise<any> => {
     if (event.isError) {
       const result = await triggerPostToolUseFailureHooks(
         event.toolName,
@@ -364,5 +364,5 @@ export function registerToolHooks(pi: ExtensionAPI, shared: HookModuleContext) {
         isError: result.isError ?? event.isError,
       } as any;
     }
-  });
+  }));
 }

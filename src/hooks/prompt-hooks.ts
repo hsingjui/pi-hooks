@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { getHookGroups } from "../config";
-import type { HookModuleContext } from "../hook-context";
+import { type HookModuleContext, safeHandler } from "../hook-context";
 import type {
   HookExecutionContext,
   NotifyFn,
@@ -84,7 +84,7 @@ export function registerPromptHooks(
   pi: ExtensionAPI,
   shared: HookModuleContext,
 ) {
-  pi.on("input", async (event, ctx) => {
+  pi.on("input", safeHandler(async (event, ctx) => {
     shared.pendingUserPromptContext = undefined;
     shared.stopHookActive = false;
 
@@ -114,9 +114,9 @@ export function registerPromptHooks(
     }
 
     return { action: "continue" } as const;
-  });
+  }));
 
-  pi.on("before_agent_start", async (_event, _ctx) => {
+  pi.on("before_agent_start", safeHandler(async (_event, _ctx) => {
     if (!shared.pendingUserPromptContext) {
       return;
     }
@@ -134,5 +134,5 @@ export function registerPromptHooks(
         },
       },
     };
-  });
+  }));
 }
