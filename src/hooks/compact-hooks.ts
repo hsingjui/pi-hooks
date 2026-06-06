@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { HookModuleContext } from "../hook-context";
+import { type HookModuleContext, safeHandler } from "../hook-context";
 import type {
   HookExecutionContext,
   HookRunResult,
@@ -18,7 +18,7 @@ async function triggerCompactHooks(
 }
 
 export function registerCompactHooks(pi: ExtensionAPI, shared: HookModuleContext) {
-  pi.on("session_before_compact", async (event, ctx) => {
+  pi.on("session_before_compact", safeHandler(async (event, ctx) => {
     const trigger: "manual" | "auto" = "manual";
     await triggerCompactHooks(
       "PreCompact",
@@ -33,9 +33,9 @@ export function registerCompactHooks(pi: ExtensionAPI, shared: HookModuleContext
       shared.currentSettings,
       (msg, type) => shared.notify(ctx, msg, type),
     );
-  });
+  }));
 
-  pi.on("session_compact", async (event, ctx) => {
+  pi.on("session_compact", safeHandler(async (event, ctx) => {
     const trigger: "manual" | "auto" = "manual";
 
     await triggerCompactHooks(
@@ -53,5 +53,5 @@ export function registerCompactHooks(pi: ExtensionAPI, shared: HookModuleContext
     );
 
     await shared.triggerSessionStartHook("compact", ctx);
-  });
+  }));
 }

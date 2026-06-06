@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { HookModuleContext } from "../hook-context";
+import { type HookModuleContext, safeHandler } from "../hook-context";
 import type {
   HookExecutionContext,
   HookMatcherValue,
@@ -31,7 +31,7 @@ export function registerSessionHooks(
   //
   // SessionEnd 映射：
   // other -> session_shutdown
-  pi.on("session_start", async (event, ctx) => {
+  pi.on("session_start", safeHandler(async (event, ctx) => {
     shared.initSettings(ctx.cwd);
 
     if (event.reason === "startup" || event.reason === "new") {
@@ -42,9 +42,9 @@ export function registerSessionHooks(
     if (event.reason === "resume") {
       await shared.triggerSessionStartHook("resume", ctx);
     }
-  });
+  }));
 
-  pi.on("session_shutdown", async (_event, ctx) => {
+  pi.on("session_shutdown", safeHandler(async (_event, ctx) => {
     const reason = "other";
 
     // SessionEnd 固定由 session_shutdown 触发，matcher 仅使用 other。
@@ -60,5 +60,5 @@ export function registerSessionHooks(
       shared.currentSettings,
       (msg, type) => shared.notify(ctx, msg, type),
     );
-  });
+  }));
 }

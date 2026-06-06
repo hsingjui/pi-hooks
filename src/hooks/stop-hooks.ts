@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { getHookGroups } from "../config";
 import { extractTextFromContent } from "../helpers";
-import type { HookModuleContext } from "../hook-context";
+import { type HookModuleContext, safeHandler } from "../hook-context";
 import type {
   HookExecutionContext,
   NotifyFn,
@@ -98,7 +98,7 @@ export async function triggerStopHooks(
 }
 
 export function registerStopHooks(pi: ExtensionAPI, shared: HookModuleContext) {
-  pi.on("agent_end", async (event, ctx) => {
+  pi.on("agent_end", safeHandler(async (event, ctx) => {
     const result = await triggerStopHooks(
       {
         sessionId: shared.getSessionId(ctx),
@@ -137,5 +137,5 @@ export function registerStopHooks(pi: ExtensionAPI, shared: HookModuleContext) {
     }
 
     shared.stopHookActive = false;
-  });
+  }));
 }

@@ -30,6 +30,35 @@ export type HookModuleContext = {
   ) => Promise<void>;
 };
 
+/**
+ * Check if an error is a stale-context error from pi session replacement.
+ * This happens when `-p` or similar causes a session reload while an
+ * extension handler is still running with the old ctx.
+ */
+export function isStaleContextError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  return /stale after session replacement/i.test(err.message);
+}
+
+/**
+ * Wrap an async event handler so stale-context errors are silently ignored.
+ * When a session is replaced mid-handler (e.g. `pi -p`), the captured ctx
+ * becomes invalid. There's nothing useful to do at that point — the session
+ * the handler was serving no longer exists.
+ */
+export function safeHandler<A, R>(
+  fn: (event: A, ctx: any) => Promise<R>,
+): (event: A, ctx: any) => Promise<R | undefined> {
+  return async (event: A, ctx: any): Promise<R | undefined> => {
+    try {
+      return await fn(event, ctx);
+    } catch (err) {
+      if (isStaleContextError(err)) return undefined;
+      throw err;
+    }
+  };
+}
+
 export function createHookContext(pi: ExtensionAPI): HookModuleContext {
   const shared: HookModuleContext = {
     pi,
