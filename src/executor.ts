@@ -1,4 +1,6 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import { GLOBAL_SETTINGS_PATH, readSettingsFile } from "./config";
 import type { Hook, HookExecutionContext } from "./types";
 
 // ============================================================================
@@ -98,6 +100,33 @@ export async function executeHook(
   return executeCommandHook(hook.command, inputJson, cwd, timeoutMs);
 }
 
+/**
+ * Resolve the bash executable, mirroring Pi's own shell resolution
+ * (utils/shell.js getShellConfig): settings shellPath first, then known
+ * Git Bash locations, then PATH as a last resort.
+ */
+function resolveBash(): string {
+  const settings = readSettingsFile(GLOBAL_SETTINGS_PATH);
+  if (settings?.shellPath && existsSync(settings.shellPath)) {
+    return settings.shellPath;
+  }
+  const candidates: Array<string | undefined> = [
+    process.env.ProgramFiles
+      ? `${process.env.ProgramFiles}/Git/bin/bash.exe`
+      : undefined,
+    process.env["ProgramFiles(x86)"]
+      ? `${process.env["ProgramFiles(x86)"]}/Git/bin/bash.exe`
+      : undefined,
+    "C:/msys64/usr/bin/bash.exe",
+  ];
+  for (const candidate of candidates) {
+    if (candidate && existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return "bash";
+}
+
 function executeCommandHook(
   command: string,
   inputJson: string,
@@ -105,7 +134,7 @@ function executeCommandHook(
   timeoutMs: number,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve) => {
-    const child = spawn("bash", ["-c", command], {
+    const child = spawn(resolveBash(), ["-c", command], {
       cwd,
       stdio: ["pipe", "pipe", "pipe"],
     });

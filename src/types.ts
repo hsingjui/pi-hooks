@@ -45,6 +45,7 @@ export type HooksConfig = {
 
 export type SettingsFile = {
   hooks?: HooksConfig;
+  shellPath?: string;
 };
 
 export type HookEventName =
